@@ -9,6 +9,8 @@
 
 library(shiny)
 library(data.table)
+library(plyr)
+library(dplyr)
 
 POS_info <- fread("data/Festival_Summary_Sheet_2.csv")
 
@@ -23,11 +25,11 @@ ui <- fluidPage(
       sidebarPanel(
         uiOutput("theme"
         ),
-        uiOutput("day_number"),
+        uiOutput("night"),
         
-        uiOutput("select_speakers"),
-        uiOutput("pre_requisites")
-      )
+        uiOutput("select_speakers")
+        #uiOutput("pre_requisites")
+      ),
       
       # Show a plot of the generated distribution
       mainPanel(
@@ -54,22 +56,54 @@ server <- function(input, output) {
   
    output$night <- renderUI({
      checkboxGroupInput("night", label = "Date",
-                        choices = theme.output)
+                        choices = night.output)
    })
   
-  output$geneset <- renderUI({
-    checkboxGroupInput("geneset", label = "Geneset PRS to include:",
-                       choices = Gene.sets.input)
-  })
+
   
-   output$distPlot <- renderPlot({
-      # generate bins based on input$bins from ui.R
-      x    <- faithful[, 2] 
-      bins <- seq(min(x), max(x), length.out = input$bins + 1)
-      
-      # draw the histogram with the specified number of bins
-      hist(x, breaks = bins, col = 'darkgray', border = 'white')
-   })
+output$select_speakers<- renderUI({
+  
+  if (is.null(input$theme)) {
+    return(NULL)
+  }    
+  if (is.null(input$night)) {
+    return(NULL)
+  }    
+  
+  POS_data_limited <- POS_info %>%
+    filter(Theme %in% input$theme,
+           Night %in% input$night,
+           !is.na(Speakers)
+    )
+  speakers_to_use <- unique(POS_data_limited$Speakers)
+  checkboxGroupInput("select_speakers", label = "Speakers",
+                     choices = speakers_to_use,selected = speakers_to_use)
+  
+})
+
+})
+  
+   output$text_1 <- renderText({
+     My_data()
+     
+     if (is.null(input$theme)) {
+       return(NULL)
+     }    
+     if (is.null(input$night)) {
+       return(NULL)
+     }   
+     if (is.null(input$select_speakers)) {
+       return(NULL)
+     }   
+     
+     POS_data_final <- POS_info %>%
+       filter(Theme %in% input$theme,
+              Night %in% input$night,
+              Speakers %in% input$select_speakers
+       )
+     text_output_speaker <- unique(unlist(POS_data_final$Twitter_handle_speaker))
+     text_output_speaker
+     
 })
 }
 # Run the application 
