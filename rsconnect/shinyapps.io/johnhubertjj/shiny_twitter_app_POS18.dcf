@@ -1,0 +1,13 @@
+name: shiny_twitter_app_POS18
+title: shiny_twitter_app_POS18
+username:
+account: johnhubertjj
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 307618
+bundleId: 1290066
+url: https://johnhubertjj.shinyapps.io/shiny_twitter_app_POS18/
+when: 1522146851.38747
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: .app.R.swp|data/.~lock.Festival_Summary_Sheet_2.csv#
