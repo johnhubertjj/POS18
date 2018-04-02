@@ -11,6 +11,7 @@ library(shiny)
 library(data.table)
 library(plyr)
 library(dplyr)
+library(rclipboard)
 
 POS_info <- fread("data/Festival_Summary_Sheet_2.csv")
 
@@ -33,13 +34,25 @@ ui <- fluidPage(
       
       # Show a plot of the generated distribution
       mainPanel(
-         textOutput("text_1")
+        rclipboardSetup(),
+        
+        textAreaInput("text_a", label = "Edit Message here:",width = "500px",resize = "both",placeholder = "Write message: (eg Pint of Science is Great!)"),
+        hr(),
+        
+        textAreaInput("text_2",label = "Full message will appear here:",width = "500px",height = "100px", resize = "both",
+                      placeholder = "Twitter handles will appear here at the end of your message depending on the options selected to the left (eg: Pint of Science is Great! @virustinkerer)"),
+        
+        # UI ouputs for the copy-to-clipboard buttons
+        uiOutput("clip"),
+        
+        # A text input for testing the clipboard content.
+        textInput("paste", "Paste here:")
       )
    )
 )
 
 # Define server logic required to draw a histogram
-server <- function(input, output) {
+server <- function(input, output,session) {
  
   My_data <- reactive({
     
@@ -83,7 +96,8 @@ output$select_speakers<- renderUI({
 
 })
   
-   output$text_1 <- renderText({
+  observe({
+    
      My_data()
      
      if (is.null(input$theme)) {
@@ -96,16 +110,34 @@ output$select_speakers<- renderUI({
        return(NULL)
      }   
      
-     POS_data_final <- POS_info %>%
+     text_output_speaker <- POS_info %>%
        filter(Theme %in% input$theme,
               Night %in% input$night,
               Speakers %in% input$select_speakers
-       )
-     text_output_speaker <- unique(unlist(POS_data_final$Twitter_handle_speaker))
-     text_output_speaker
+       )%>%
+       pull(Twitter_handle_speaker)
+     
+     text_output_speaker_1 <- unique(text_output_speaker)
+     text_output_speaker_2 <- c(input$text_a,text_output_speaker_1)
+     
+     
+     updateTextInput(session,"text_2",value = paste(text_output_speaker_2,sep = " ", collapse = " "))
+     
      
 })
-}
+   
+  
+   
+   # Add clipboard buttons
+   output$clip <- renderUI({
+     rclipButton("clipbtn", "Copy to Clipboard", input$text_2, icon("clipboard"))
+   })
+   
+   # Workaround for execution within RStudio
+   observeEvent(input$clipbtn, clipr::write_clip(input$text_2))
+  }
+
+
 # Run the application 
 shinyApp(ui = ui, server = server)
 
