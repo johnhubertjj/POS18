@@ -27,8 +27,15 @@ ui <- fluidPage(
         uiOutput("theme"
         ),
         uiOutput("night"),
-        
+        checkboxGroupInput("Include_options", 
+                           label = "Include twitter handles for?", 
+                           choices = c("Pub" = "Twitter_handle_pub",
+                                       "pint" = "#pint",
+                                       "Sponsors" = "Twitter_handle_funder") ),
         uiOutput("select_speakers")
+        
+
+        
         #uiOutput("pre_requisites")
       ),
       
@@ -46,7 +53,8 @@ ui <- fluidPage(
         uiOutput("clip"),
         
         # A text input for testing the clipboard content.
-        textInput("paste", "Paste here:")
+        textInput("paste", "Paste here:"),
+        textOutput("test1")
       )
    )
 )
@@ -100,15 +108,6 @@ output$select_speakers<- renderUI({
     
      My_data()
      
-     if (is.null(input$theme)) {
-       return(NULL)
-     }    
-     if (is.null(input$night)) {
-       return(NULL)
-     }   
-     if (is.null(input$select_speakers)) {
-       return(NULL)
-     }   
      
      text_output_speaker <- POS_info %>%
        filter(Theme %in% input$theme,
@@ -117,11 +116,79 @@ output$select_speakers<- renderUI({
        )%>%
        pull(Twitter_handle_speaker)
      
-     text_output_speaker_1 <- unique(text_output_speaker)
+     message = NULL
+     
+# Currently outputs tons of notifications everytime you type something in, change to reactive
+     if(any(is.na(text_output_speaker))){
+       message <- POS_info %>%
+         filter(Theme %in% input$theme,
+                Night %in% input$night,
+                Speakers %in% input$select_speakers,
+                is.na(Twitter_handle_speaker)
+         )%>%
+         pull(Speakers)
+       
+       message <- unique(message)
+       
+       if (length(message) == 1){
+       message <- paste(message,"has no twitter handle",collapse = ",")
+       }else{
+       
+       message <- paste(message, collapse = ", ", sep = " ")
+       message <- paste(message,"have no twitter handles", sep = " ")
+       }
+     }
+     
+     output$test1 <- renderText({
+       message
+     })
+     
+     All_handles <- "remove_me"
+
+      test <- which(input$Include_options == "Twitter_handle_pub")
+      
+      if (length(test) != 0){ 
+         pub_twitter <- POS_info %>%
+           filter(Theme %in% input$theme,
+                  Night %in% input$night,
+                  Speakers %in% input$select_speakers
+           )%>%
+           pull(Twitter_handle_pub)
+         
+         All_handles <- c(All_handles, pub_twitter)
+      }
+      
+      test <- which(input$Include_options == "Twitter_handle_funder")
+      
+      if (length(test) != 0){ 
+         funder_twitter <- POS_info %>%
+           filter(Theme %in% input$theme,
+                  Night %in% input$night,
+                  Speakers %in% input$select_speakers
+           )%>%
+           pull(Twitter_handle_funder)
+         
+         funder_twitter <- unique(funder_twitter)
+         
+         All_handles <- c(All_handles, funder_twitter)
+      }
+         test <- which(input$Include_options == "#pint")
+         
+      if (length(test) != 0){ 
+         All_handles <- c(All_handles, "#pint")
+      }
+
+     
+     if(length(All_handles) > 1){
+       All_handles <- All_handles[-1]
+       text_output_speaker <- c(text_output_speaker,All_handles)
+     }
+     
+     text_output_speaker_1 <- unique(text_output_speaker[!is.na(text_output_speaker)])
      text_output_speaker_2 <- c(input$text_a,text_output_speaker_1)
      
      
-     updateTextInput(session,"text_2",value = paste(text_output_speaker_2,sep = " ", collapse = " "))
+     updateTextInput(session,"text_2",value = paste(text_output_speaker_2, collapse = " "))
      
      
 })
