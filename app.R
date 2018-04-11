@@ -14,6 +14,7 @@ library(dplyr)
 library(rclipboard)
 
 POS_info <- fread("data/Festival_Summary_Sheet_2.csv")
+POS_info$Date <- as.factor(POS_info$Date)
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(
@@ -30,8 +31,9 @@ ui <- fluidPage(
         checkboxGroupInput("Include_options", 
                            label = "Include twitter handles for?", 
                            choices = c("Pub" = "Twitter_handle_pub",
-                                       "pint" = "#pint",
-                                       "Sponsors" = "Twitter_handle_funder") ),
+                                       "pint18" = "#pint18",
+                                       "Sponsors" = "Twitter_handle_funder",
+                                       "Cardiff" = "Cardiff_handles") ),
         uiOutput("select_speakers")
         
 
@@ -52,8 +54,6 @@ ui <- fluidPage(
         # UI ouputs for the copy-to-clipboard buttons
         uiOutput("clip"),
         
-        # A text input for testing the clipboard content.
-        textInput("paste", "Paste here:"),
         textOutput("test1")
       )
    )
@@ -66,7 +66,7 @@ server <- function(input, output,session) {
     
     ## Create arguments to shiny app
     theme.output <- unique(POS_info$Theme)
-    night.output <- unique(POS_info$Night)
+    night.output <- levels(unique(POS_info$Date))
     
 # alter the data.table here to append a date to each numerical date measurement...
     
@@ -93,7 +93,7 @@ output$select_speakers<- renderUI({
   
   POS_data_limited <- POS_info %>%
     filter(Theme %in% input$theme,
-           Night %in% input$night,
+           Date %in% input$night,
            !is.na(Speakers)
     )
   speakers_to_use <- unique(POS_data_limited$Speakers)
@@ -111,7 +111,7 @@ output$select_speakers<- renderUI({
      
      text_output_speaker <- POS_info %>%
        filter(Theme %in% input$theme,
-              Night %in% input$night,
+              Date %in% input$night,
               Speakers %in% input$select_speakers
        )%>%
        pull(Twitter_handle_speaker)
@@ -122,7 +122,7 @@ output$select_speakers<- renderUI({
      if(any(is.na(text_output_speaker))){
        message <- POS_info %>%
          filter(Theme %in% input$theme,
-                Night %in% input$night,
+                Date %in% input$night,
                 Speakers %in% input$select_speakers,
                 is.na(Twitter_handle_speaker)
          )%>%
@@ -150,7 +150,7 @@ output$select_speakers<- renderUI({
       if (length(test) != 0){ 
          pub_twitter <- POS_info %>%
            filter(Theme %in% input$theme,
-                  Night %in% input$night,
+                  Date %in% input$night,
                   Speakers %in% input$select_speakers
            )%>%
            pull(Twitter_handle_pub)
@@ -163,8 +163,7 @@ output$select_speakers<- renderUI({
       if (length(test) != 0){ 
          funder_twitter <- POS_info %>%
            filter(Theme %in% input$theme,
-                  Night %in% input$night,
-                  Speakers %in% input$select_speakers
+                  Date %in% input$night
            )%>%
            pull(Twitter_handle_funder)
          
@@ -172,12 +171,19 @@ output$select_speakers<- renderUI({
          
          All_handles <- c(All_handles, funder_twitter)
       }
-         test <- which(input$Include_options == "#pint")
+
+        test <- which(input$Include_options == "Cardiff_handles")
+        
+      if (length(test) != 0 ){
+        All_handles <- c(All_handles, "@engagewithCU", "@CUPublicEvents")
+      }
+        
+         test <- which(input$Include_options == "#pint18")
          
       if (length(test) != 0){ 
-         All_handles <- c(All_handles, "#pint")
+         All_handles <- c(All_handles, "@pintofscience", "#pint18")
       }
-
+         
      
      if(length(All_handles) > 1){
        All_handles <- All_handles[-1]
@@ -199,10 +205,7 @@ output$select_speakers<- renderUI({
    output$clip <- renderUI({
      rclipButton("clipbtn", "Copy to Clipboard", input$text_2, icon("clipboard"))
    })
-   
-   # Workaround for execution within RStudio
-   observeEvent(input$clipbtn, clipr::write_clip(input$text_2))
-  }
+}
 
 
 # Run the application 
