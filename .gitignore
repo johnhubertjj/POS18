@@ -32,5 +32,6 @@ vignettes/*.pdf
 *.utf8.md
 *.knit.md
 
-#rsconnect
+# rsconnect
 rsconnect/
+
