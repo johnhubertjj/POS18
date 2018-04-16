@@ -6,6 +6,8 @@
 #
 #    http://shiny.rstudio.com/
 #
+# Copyright 2018, John Hubert, All rights reserved.
+# GNU public licence (as stated in repository)
 
 library(shiny)
 library(data.table)
