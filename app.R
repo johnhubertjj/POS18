@@ -16,6 +16,9 @@ library(rclipboard)
 POS_info <- fread("data/Festival_Summary_Sheet_2.csv")
 POS_info$Date <- as.factor(POS_info$Date)
 
+Media_Wales <- c("@BBCRadioWales", "@ITVWales", "@WalesOnline", "@capitalswanews", "@HeartWales", "@heartwalesnews", "@southwalesargus")
+Media_Cardiff <- c("@WoiC", "@WeAreCardiff", "@cardiffonline", "@VisitCardiff", "@MadeInCardiffTV", "@cardiffcouncil", "@cardiffian_news", "@itsoncardiff")
+
 # Define UI for application that draws a histogram
 ui <- fluidPage(
    
@@ -33,7 +36,10 @@ ui <- fluidPage(
                            choices = c("Pub" = "Twitter_handle_pub",
                                        "pint18" = "#pint18",
                                        "Sponsors" = "Twitter_handle_funder",
-                                       "Cardiff" = "Cardiff_handles") ),
+                                       "Cardiff" = "Cardiff_handles",
+                                       "Media-Wales" = "Media_Wales",
+                                       "Media-Cardiff" = "Media_Cardiff")
+                           ),
         uiOutput("select_speakers")
         
 
@@ -45,12 +51,14 @@ ui <- fluidPage(
       mainPanel(
         rclipboardSetup(),
         
-        textAreaInput("text_a", label = "Edit Message here:",width = "500px",resize = "both",placeholder = "Write message: (eg Pint of Science is Great!)"),
+        textAreaInput("text_a", label = "Edit Message here:",width = "500px", resize = "both",placeholder = "Write message: (eg Pint of Science is Great!)"),
         hr(),
         
         textAreaInput("text_2",label = "Full message will appear here:",width = "500px",height = "100px", resize = "both",
                       placeholder = "Twitter handles will appear here at the end of your message depending on the options selected to the left (eg: Pint of Science is Great! @virustinkerer)"),
-        
+        fluidRow(column(8,
+               htmlOutput("length_text_left")
+        )),
         # UI ouputs for the copy-to-clipboard buttons
         uiOutput("clip"),
         
@@ -172,6 +180,19 @@ output$select_speakers<- renderUI({
          All_handles <- c(All_handles, funder_twitter)
       }
 
+      
+      test <- which(input$Include_options == "Media_Cardiff")
+
+      if (length(test) != 0 ){
+        All_handles <- c(All_handles, Media_Cardiff)
+      }
+      
+      test <- which(input$Include_options == "Media_Wales")
+      
+      if (length(test) != 0 ){
+        All_handles <- c(All_handles, Media_Wales)
+      }
+      
         test <- which(input$Include_options == "Cardiff_handles")
         
       if (length(test) != 0 ){
@@ -196,10 +217,23 @@ output$select_speakers<- renderUI({
      
      updateTextInput(session,"text_2",value = paste(text_output_speaker_2, collapse = " "))
      
-     
+     #number_of_characters <- paste(text_output_speaker_2, collapse = " ")
+     #number_of_characters <- nchar(input$text_2)
+     #output$length_text_left <- renderText(280 - number_of_characters)
 })
-   
   
+  observeEvent(input$text_2,
+               {  
+                number_of_characters <- nchar(input$text_2)
+                characters_left <- 280 - number_of_characters
+                
+                 if (characters_left > 0){
+  output$length_text_left <- renderText({paste("<font color=\"#66ff33\"><b>", characters_left, "</b></font>") }) 
+  
+                 }else{
+                   output$length_text_left <- renderText({paste("<font color=\"#ff3300\"><b>", characters_left, "</b></font>") }) 
+                 }
+  })
    
    # Add clipboard buttons
    output$clip <- renderUI({
